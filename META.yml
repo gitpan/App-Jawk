@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name:               App-Jawk
-version:            0.01
-abstract:           The great new App::Jawk!
+version:            0.02
+abstract:           bin/jawk
 author:
     - joshr <joshr>
 license:            unknown

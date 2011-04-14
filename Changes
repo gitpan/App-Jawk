@@ -1,5 +1,11 @@
 Revision history for App-Jawk
+This file is created manually to describe changes to App::Jawk.
 
-0.01    Date/time
+See ChangeLog for detailed record of individual changes.
+
+0.02    2011-04-13
+        Actually install the script from bin/jawk.
+
+0.01    2011-04-13
         First version, released on an unsuspecting world.
 
