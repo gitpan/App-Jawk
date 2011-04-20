@@ -1,10 +1,23 @@
 Revision history for App-Jawk
 This file is created manually to describe changes to App::Jawk.
 
-See ChangeLog for detailed record of individual changes.
+See ChangeLog for detailed record of individual changes from the source control system.
+
+0.04    2011-04-19
+        Rewrote how we handle ranges and negative indexes.
+        Rewrote how we handle inverted fields.  
+        Optimized how we convert field numbers to text.
+        Documentation and comment changes.
+        Test t/jawk.t added.
+
+0.03    2011-04-16
+        Corrections to t/00-load.t
+        Newline mode removed.
+        Not released.  
 
 0.02    2011-04-13
         Actually install the script from bin/jawk.
+        Removed lib/App/Jawk.pm
 
 0.01    2011-04-13
         First version, released on an unsuspecting world.

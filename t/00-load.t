@@ -3,7 +3,8 @@
 use Test::More tests => 1;
 
 BEGIN {
-	use_ok( 'App::Jawk' );
+    ok( -e "bin/jawk", "bin/jawk exists" );
+    #ok( -x "bin/jawk", "bin/jawk is executable" );
 }
 
-diag( "Testing App::Jawk $App::Jawk::VERSION, Perl $], $^X" );
+#diag( "Testing App::Jawk $App::Jawk::VERSION, Perl $], $^X" );

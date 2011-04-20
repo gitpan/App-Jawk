@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               App-Jawk
-version:            0.02
+version:            0.04
 abstract:           bin/jawk
 author:
     - joshr <joshr>

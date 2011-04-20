@@ -4,18 +4,18 @@ use strict;
 # OK. First of all. We know that this LOOKS ugly - but we promise -- it's not.
 # 
 # jawk. like 'awk', but Joshy and Perly.
+# Copyright 2011 (c) Josh Rabinowitz
 #
 # USES NO EXTERNAL MODULES 
 #use Memoize;       # we're actually not even using memoize now. 
 #                   # one test showed that using memoize() for
 #                   # convert_args_to_fields() sped up runtime by ~25%
 #
-our $VERSION = 0.02;
 my $prog = "jawk";
+our $VERSION = 0.04;
 my $exclude;
 my $delimiter = ' ';
 my $joiner = ' ';
-my $newline = 0;    # don't auto-add newlines
 my $awky = 0;       # if we're awky then we use $1 $2 $3 and not @F
 my $debug = 0;
 my $warnings = 0;   # do we show warnings for code run via -e ?
@@ -36,6 +36,8 @@ my $warnings = 0;   # do we show warnings for code run via -e ?
 #
 # Our closest 'role model' (other than the anachronistic awk) 
 #  is cut, which uses -f 'fields' to specify fields :/, no ranges, no exclusion option, etc.
+# Also, cut uses 'tab' as its default delimiter: jawk uses whitespace [specifically split(' ', $line),
+#  which acts more like awk] as its default delimiter.
 #
 ############################################
 main();
@@ -43,7 +45,7 @@ main();
 ############################################
 sub Usage {
     return  "$prog [-x] [-e 'code'] [-d delim] fieldspec [fieldspec...] [-- (FILES..)]:\n" .
-            " jawk 1 is somewhat like awk '{print \$1}'.\n"  .
+            " jawk 1 is like awk '{print \$1}'.\n"  .
             "   jawk also allows ranges with '..'. For example:\n" .
             "   Fieldspec can be like A, A..B, A.., or ..B (A and B are + or - ints).\n" .
             "   Negative values for A and B count backwards so -1 is the last field.\n" .
@@ -53,8 +55,7 @@ sub Usage {
             "   -D turns on DEBUG mode\n" .
             "   -j joiner\n" .
             "   -x means _don't_ show the numbered fields, and show the others.\n" .
-            "   -n means add a newline (when in -e mode).\n" .
-            "   -e 'perlcode'   : more like awk but with \@F, and perl\n" .
+            "   -e 'print \"\@F\n\"'   : more like awk but with \@F, and perl\n" .
             "   -w means 'use warnings' for perlcode run via -e\n";
             #"   -a is for old (deprecated) 'awky' mode with \$1 \$2 etc (from perl)\n" .
 }
@@ -62,7 +63,6 @@ sub Usage {
 ############################################
 sub main {
     #memoize( 'convert_args_to_fields' ); # this speeds up named-query-stats from 2.33 to 1.7 minutes (~25%).
-    #memoize( 'invert_fields' );          # this doesn't work (as shown) because we pass fields by reference.
     my @args;
 
     my $exe = "";   # whatever perl code we should execute for each line
@@ -74,10 +74,10 @@ sub main {
     #
     # With all the code below, we've finally replicated most of Getopt::Long's -- option :).
     # Except Getopt::Long doesn't store away @args and @ARGV separately like we do.
+    #  (although it would be nice to support named options like --version).
     ARGVLOOP:
     while( defined($_ = shift @ARGV) ) {    # manual handling of command-line options
         if    (/^-x/)   { $exclude = 1; }                                 # -x option
-        elsif (/^-n/)   { $newline = 1; }                                 # -n option
         #elsif (/^-a/)   { $awky = 1;    }    # -a is DEPRECATED         # -a option, $1 instead of @F  # AWK MODE IS DISABLED
         elsif (/^-D/)   { $debug = 1;    }                              # debug
         elsif (/^-w/)   { $warnings = 1;    }                            # turn on perl warnings -e code
@@ -89,13 +89,12 @@ sub main {
         elsif (/^-j=(.*)$/)  { $joiner = $1           || die "$prog: -j (joiner) needs param\n"; }
         elsif (/^-\d+/) { push(@args, $_); }                              # negative digits
         elsif (/^--?$/) { last ARGVLOOP; }                                # stop processing at - or --
-        #elsif (/^-/)    { die "$prog: Option not understood: $_\n" . Usage(); }  # other -options
         elsif (/^-/)    { die "$prog: Option not understood: $_\n" . Usage(); }  # other -options
         else            { push(@args, $_); }                              
         # ok; non-hyphenated option like digit or ..
     } 
 
-    #print "$prog: args passed: @ARGV\n" if $verbose;
+    #print "$prog: args passed: @ARGV\n" if $debug;
     warn "$prog: Doesn't make sense to use numbered fields and -e, fields ignored\n" if ($exe && @args);
 
     my $quote_meta_delimiter = defined($delimiter) ? quotemeta( $delimiter ) : "";
@@ -106,7 +105,7 @@ sub main {
         # split the line into parts
         my @parts;
         if ($delimiter eq ' ' ) {
-            @parts = split( ' ', $line);	    # ' ' is a special case with split, which acts special. look it up!
+            @parts = split( ' ', $line );	    # ' ' is a special case with split, which acts special. look it up!
         } else { 
             @parts = split(/$quote_meta_delimiter/, $line);	    # so you can split on chars like "("
             #shift(@parts) while (@parts && $parts[0] =~ /^\s*$/);  # should we strip leading blank fields?
@@ -117,9 +116,6 @@ sub main {
             my $exe_expanded = replace_exe_vars( $exe, \@parts );   # expand to perl script
             eval "$exe_expanded";      # string eval.
             warn "$prog: Error running: $exe_expanded: $@\n" if $@;
-
-            print "\n" if $newline;             # -n is "newline" mode.
-
         } else {    # otherwise, pull out fields via numbered args.
 
             # convert the args (things from @ARGV that don't look like command-line options)
@@ -134,7 +130,6 @@ sub main {
                 @fields = invert_fields( \@fields, scalar(@parts) );
             }
 
-            # show the fields we want from @parts
             print (join($joiner, @parts[@fields]) . "\n");
         }
     }
@@ -143,16 +138,16 @@ sub main {
 
 ############################################
 # my $exe_expanded = replace_exe_vars( $exe, \@fields )
-# since we can't actually assign to $1, $2, $3, etc easily,
-# we manually parse out $\d+ and ${\d+} sequences from the exe string they pass
-#   and pass back a string to be eval'ed :)
 sub replace_exe_vars {
     my ($exe, $fieldsref) = @_;
     my @fields = @$fieldsref;
 
     # AWK MODE IS DISABLED ABOVE
     if ($awky) { 
-        # awky style, to be deprecated. Replace $1 $2 $3 etc
+        # awky style, to be deprecated. Replace $1 $2 $3 etc.
+        #   since we can't actually assign to $1, $2, $3, etc easily,
+        #   we manually parse out $\d+ and ${\d+} sequences from the exe string they pass
+        #   and pass back a string to be eval'ed :)
         #print "incoming exe: $exe; [@fields]\n";
         #$exe =~ s/ \$ ([0-9]+) /my $c = $fields->[\$1-1];\\$c/geex; # $fields->[$1-1]/xg;
         while( $exe =~ m/ \$ ([0-9]+) /x) {
@@ -179,45 +174,35 @@ sub replace_exe_vars {
 
 #########################################################
 # convert_args_to_fields( $args_ref, $numparts_in_line )
-# args come in 1-based, and are returned 0-based
+# args come in 1-based (or negative), and are returned 0-based
 # handles ranges like 1..3 or 3..1
-# also handles negative args alone or in ranges,
+# as well as negative args alone or in ranges,
 # like -2..1, or like -1..1
+#  note: could probably be optimized 20-30% by doing this all in one giant map{}
 sub convert_args_to_fields {
     my ($args_ref, $numparts) = @_;
     return () unless $numparts;
     
-    my @ret = @$args_ref;
-    # convert the user's fields to field numbers within the fields
-    # NOTE: ignores indexes outside existing fields
-    print STDERR "$prog: 0: initially   (@ret)\n" if $debug;
+    print STDERR "$prog: 0: initially   (@$args_ref)\n" if $debug;
    
-    # first, deal with negative indices by replacing them with their positive versions
-    for (@ret) {
-        while (/(-\d+)/) {  # look for negative numbers. 
-            my $p = $1 + $numparts + 1;
-            s/$1/$p/;       # replace them with their positive versions, one at a time
-        }
-    }
-    
+    my $numreg = '-?\d+';   # our 'number regex'
+
+    # convert the user's fields to field numbers within the fields
     # parse the command line arguments for ints and ranges like a..b ,  a.. , and b.. .
-    #   --we've already replaced negative vals with their pos versions above
-    # (This could be broken up into multiple steps for clarity)
-    @ret = (
-            map { /^\d+$/            ? ($_) :                                  # ** a single int
-                /^(\d+)\.\.(\d+)$/   ? (get_range($1, $2))  :                  # ** an int range
-                /^(\d+)\.\.$/        ? (get_range($1, max($1, $numparts))) :   # ** an integer and up
-                /^\.\.(\d+)$/        ? (get_range(1, $1)) :                    # ** up to an integer
+    # skip indexes that we don't have a value for, and
+    # shift each int down by one; 1-based to 0-based.
+    # (This was originally more broken up for clarity, but we optimized (and shortened)
+    # it to this.)
+    my @ret = map { $_ - 1 } 
+            grep {$_ <= $numparts && $_ >= 1 } 
+             map { /^$numreg$/                ? (_converted_version($_, $numparts)) :   # ** a single int
+                  /^($numreg)\.\.($numreg)$/ ? (get_range($1, $2, $numparts))  :       # ** an int range
+                  /^($numreg)\.\.$/          ? (get_range($1, $numparts, $numparts)) : # ** an integer and up
+                  /^\.\.($numreg)$/          ? (get_range(1, $1, $numparts)) :         # ** up to an integer
                     die "$prog: Don't know how to handle field '$_'\n" . Usage();
             }
-         @ret);
+         @$args_ref;
     print STDERR "$prog: 1: modified to (@ret)\n" if $debug;
-
-    @ret = grep { $_ <= $numparts && $_ >= 1 } @ret;       # match only indexes that we have a value for
-    print STDERR "$prog: 2: modified to (@ret)\n" if $debug;
-
-    @ret = map  { $_ - 1 } @ret;                           # shift each int down by one; 1-based to 0-based
-    print STDERR "$prog: 3: modified to (@ret)\n" if $debug;
 
     return @ret;
 }
@@ -225,33 +210,51 @@ sub convert_args_to_fields {
 ############################################
 # invert_fields( [ 1, 2], 3 );# ( [activated], num_fields )
 # choose the opposite of whatever's currently selected from num_fields.
-# all indexes have been converted to non-negatives already, but are still 0-based.
+# all indexes have been converted to normal 0-based perl style.
 sub invert_fields {
     my ($fieldsref, $numparts) = @_;
-    my %fieldshash;	                # for exclusion
-    @fieldshash{ @$fieldsref } = ();    # set @$fieldsref names as keys 
+    my %fieldshash = map { ( $_, undef ) } @$fieldsref;	 # keys are fields for exclusion
     my @inversefields = grep { !exists($fieldshash{$_}) } ( 0 .. $numparts-1);      # this is correct
     return @inversefields;       # all the other fields
 }
 
 ############################################
-# get_range( $a, $b ) 
-#  returns all the ints from $a to $b, inclusive
-#  handles descending lists, unlike '..'  :)
+# get_range( $a, $b )
+#  where $a and $b are indexes as specified by user.
+#  Converts $a and $b to positive versions, and 
+#  returns all the possible ints from $a to $b, inclusive
+#  handles descending lists, unlike perl's '..'  :)
 sub get_range {
-    my ($a, $b) = @_;
+    my ($a, $b, $numparts) = @_;
+    $a = _restrict_to_possible( _converted_version($a, $numparts), $numparts);
+    $b = _restrict_to_possible( _converted_version($b, $numparts), $numparts);
     if ( $a <= $b ) { return ($a..$b); }
     return (reverse($b..$a));    # they asked for a list in reverse. make it ascending, and reverse it.
                                  # or as Missy Elliott would say - flip it and reverse it.
 }
 
 ############################################
-# max( $a, $b )
-# returns the max of the two
-sub max {
-    my ($a, $b) = @_;
-    return $a if ($a >= $b);
-    return $b;
+# $num = _converted_version( $num, $numparts ) 
+# returns the int $numparts converted to be as if it were sane and 1-based.
+# returns 0 if there arent as many columns are requested 
+# (IE, there are seven columns and you ask for the eighth).
+sub _converted_version {
+    my ($num, $numparts) = @_;
+    if ($num < 0) {
+        $num = $numparts + $num + 1;
+    }
+    return $num;
+}
+
+############################################
+# $num = _restrict_to_possible( $index, $numparts );
+# restricts an input index within the range 
+# of possible positive indexes for this row.
+sub _restrict_to_possible {
+    my ($num, $numparts) = @_;
+    if ($num < 0) { $num = $numparts ? 1 : 0; }
+    if ($num > $numparts) { $num = $numparts; }
+    return $num;
 }
 
 
@@ -279,7 +282,7 @@ which supports ranges, indexing columns by negative numbers, a perl mode, and mo
 =head1 DESCRIPTION
 
 jawk 1 is somewhat like awk '{print $1}'. Let's start with a fairly complex example.
-Suppose you have a file called 'names' with lines of data in this format:
+Suppose you have a file called 'users.txt' with lines of data in this format:
    
    Bob Elmer, 2716 Fremont Blvd, New York, NY, 12344, ID:91818, CanastaRating:3.1415
    Elmer Fudd, 1 Bunny Hill Drive, Tarrytown, NY, 87654, ID:1, CanastaRating:123456789
@@ -287,13 +290,13 @@ Suppose you have a file called 'names' with lines of data in this format:
 This statement would pull out the 1st, and 3rd through last columns, using ', ' as an 
 input delimiter (we've put two spaces between options, for clarity):
 
-  jawk  -d', '  1  3..-1  --  names.txt 
+  jawk  -d', '  1  3..-1  --  users.txt 
 
-Note the use of C<-d>, negative indexes, the non-default element delimiter via C<-d>, 
+Note the use of negative indexes, the non-default element delimiter via C<-d>, 
 and the C<--> anti-option (which indicates that following arguments should be considered
 files to read).
 
-jawk also allows ranges with C<..>. For example, a field specification can look 
+jawk also allows ranges using the C<..> sequence. For example, a field specification can look 
 like C<A>, C<A..B>, C<A..>, or C<..B>, where (C<A> and C<B> can be negative or 
 positive integers.
 
@@ -349,14 +352,14 @@ column should (or should not, depending on -x, be output).
 Negative indexes count from the right, like in perl, so the right-most 
 column is number C<-1>.
 
-=item C<INTEGER RANGE>
+=item C<RANGE OF NON-ZERO INTEGERS>
 
 Integer ranges are specified with C<..>, and given that A and B 
 are non-zero integers, can look like 
 
- C<A..B>
- C<A..>
- C<..B>
+ A..B
+ A..
+ ..B
 
 If you specify ranges in reverse order from their source, 
 like C<cat file | jawk -1..1> or C<cat file | jawk 8-2>
@@ -376,10 +379,6 @@ Specify an alternate join character sequence in place of 'space'.
 
 Exclude the chosen columns, negating their meaning. Does not interoperate with -e 'perlcode' option.
 
-=item -n
-
-Add a newline at the end of each line output. Intended for use with -e 'perlcode' option.
-
 =item -e='perlcode' or -e 'perlcode'
 
 Use perl code passed to process parsed items. Fields come in through the @F array, and are 0-indexed
@@ -390,7 +389,8 @@ columns of input, is
 
 =item -w
 
-Use perl code passed to process parsed items. Fields come in through the @F array, and are 0-indexed
+Run perl code used with -e option with warnings on. (Strictness is always enabled but can
+be disabled by putting 'no strict' in your script).
 
 =item --
 
