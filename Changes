@@ -3,6 +3,8 @@ This file is created manually to describe changes to App::Jawk.
 
 See ChangeLog for detailed record of individual changes from the source control system.
 
+0.07    2012-12-16
+        Fix version in bin/jawk
 0.06    2012-12-16
         Complete pod moved from bin/jawk to lib/App/Jawk.pm
 0.05    2012-12-16

@@ -14,4 +14,4 @@ meta-spec:
 name: App-Jawk
 requires:
   Test::More: 0
-version: 0.06
+version: 0.07

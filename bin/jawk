@@ -12,7 +12,7 @@ use strict;
 #                   # convert_args_to_fields() sped up runtime by ~25%
 #
 my $prog = "jawk";
-our $VERSION = 0.04;
+our $VERSION = "0.07";
 my $exclude;
 my $delimiter = ' ';
 my $joiner = ' ';
