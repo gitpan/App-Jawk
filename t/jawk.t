@@ -6,8 +6,8 @@ use strict;
 use Test::More qw(no_plan);
 use File::Temp qw/ tempfile /;
 
-unless( $ENV{AUTHOR_TESTS} ) {
-    ok( 1, "skipping tests, \$ENV{AUTHOR_TESTS} not set" );
+unless( $ENV{AUTHOR_TESTING} ) {
+    ok( 1, "skipping tests, \$ENV{AUTHOR_TESTING} not set" );
     exit( 0 );
 }
 # sample text to operate on.
