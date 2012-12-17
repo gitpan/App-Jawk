@@ -8,3 +8,4 @@ BEGIN {
 }
 
 #diag( "Testing App::Jawk $App::Jawk::VERSION, Perl $], $^X" );
+1;

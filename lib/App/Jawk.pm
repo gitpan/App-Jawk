@@ -2,8 +2,10 @@ package App::Jawk;
 use strict;
 
 BEGIN {
-$VERSION = '0.09';
+our $VERSION = '0.10';
 };
+
+1;
 
 # this is just here for the documentation
 

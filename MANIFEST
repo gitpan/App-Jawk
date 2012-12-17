@@ -2,9 +2,8 @@ ChangeLog
 Changes
 LICENSE
 MANIFEST
+META.json
 META.yml
-MYMETA.json
-MYMETA.yml
 Makefile.PL
 README
 bin/jawk
@@ -13,7 +12,6 @@ lib/App/Jawk.pm
 t/00-load.t
 t/boilerplate.t
 t/jawk.t
-t/pod-coverage.t
-t/pod.t
+t/release-distmeta.t
 t/release-pod-coverage.t
 t/release-pod-syntax.t

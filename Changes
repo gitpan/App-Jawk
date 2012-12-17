@@ -2,7 +2,9 @@ Revision history for App-Jawk
 This file is created manually to describe changes to App::Jawk.
 
 See ChangeLog for detailed record of individual changes from the source control system.
-
+0.10    2012-12-17
+        Remove MYMETA.yml and MYMETA.json from source dzil code.
+        Use more automated dzil tests.
 0.09    2012-12-17
         Move perldocs from Jawk.pm to bin/jawk
 0.08    2012-12-16
