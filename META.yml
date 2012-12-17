@@ -1,5 +1,5 @@
 ---
-abstract: 'Documentation for jawk'
+abstract: "like awk, but post-modern and perly. AKA, Josh's Awk."
 author:
   - 'joshr <joshr@cpan.org>'
 build_requires: {}
@@ -14,4 +14,4 @@ meta-spec:
 name: App-Jawk
 requires:
   Test::More: 0
-version: 0.05
+version: 0.06
