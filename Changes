@@ -3,6 +3,8 @@ This file is created manually to describe changes to App::Jawk.
 
 See ChangeLog for detailed record of individual changes from the source control system.
 
+0.05    2011-07-08
+        Documentation changes.
 0.04    2011-04-19
         Rewrote how we handle ranges and negative indexes.
         Rewrote how we handle inverted fields.  

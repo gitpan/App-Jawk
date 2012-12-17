@@ -4,7 +4,7 @@ use strict;
 # OK. First of all. We know that this LOOKS ugly - but we promise -- it's not.
 # 
 # jawk. like 'awk', but Joshy and Perly.
-# Copyright 2011 (c) Josh Rabinowitz
+# Copyright 2011-2012 (c) Josh Rabinowitz
 #
 # USES NO EXTERNAL MODULES 
 #use Memoize;       # we're actually not even using memoize now. 
@@ -316,6 +316,7 @@ to pull out the 2nd column from a file, you can now do:
 jawk offers many other improvements.  Here are examples:
 
 select out the 1st, 3rd, and 4th columns from file
+
   cat file | jawk 1 3 4
 
 select all columns except the 1st, and 9th through remaining. Uses the -x option
@@ -363,7 +364,7 @@ are non-zero integers, can look like
 
 If you specify ranges in reverse order from their source, 
 like C<cat file | jawk -1..1> or C<cat file | jawk 8-2>
-you'll get the fields in revers order, like you asked.
+you'll get the fields in reverse order, like you asked.
 
 =item -d delimiter (or -d=delimiter)
 

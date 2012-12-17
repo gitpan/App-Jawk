@@ -1,12 +1,19 @@
-bin/jawk
 ChangeLog
 Changes
-Makefile.PL
+LICENSE
 MANIFEST
+META.yml
+MYMETA.json
+MYMETA.yml
+Makefile.PL
 README
+bin/jawk
+dist.ini
+lib/App/Jawk.pm
 t/00-load.t
 t/boilerplate.t
+t/jawk.t
 t/pod-coverage.t
 t/pod.t
-t/jawk.t
-META.yml                                 Module meta-data (added by MakeMaker)
+t/release-pod-coverage.t
+t/release-pod-syntax.t
