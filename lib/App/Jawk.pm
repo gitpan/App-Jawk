@@ -1,6 +1,9 @@
 package App::Jawk;
 use strict;
 
+BEGIN {
+$VERSION = '0.08';
+};
 
 =pod
 
